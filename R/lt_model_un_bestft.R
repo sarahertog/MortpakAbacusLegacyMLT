@@ -1,13 +1,3 @@
-lt_model_un_bestft<-function(type, 
-                             sex, 
-                             age_start_abridged, 
-                             qx_abridged, 
-                             user_pattern=NA,
-                             lt_compute = TRUE,
-                             axmethod = "un",
-                             a0rule = "cd",
-                             mod = FALSE,
-                             OAnew = 110) {
 # --------------------------------------------------------------------------------------------------------------------------
 #       BESTFT is derived from MORTPAK software package and customized for Abacus
 #                  UNITED NATION SOFTWARE PACKAGE FOR MORTALITY MEASUREMENT    
@@ -17,7 +7,7 @@ lt_model_un_bestft<-function(type,
 #' Identify best fit life table from UN model life table families fitting up to three components
 #' 
 #' @details xxx
-#' @param sex Choose the sex of the population. 
+#' @param Sex Choose the sex of the population. 
 #' #' The following options are available: \itemize{
 #'   \item{\code{"f"}} -- Females;
 #'   \item{\code{"m"}} -- Males.
@@ -34,15 +24,38 @@ lt_model_un_bestft<-function(type,
 #' @param age_start_abridged numeric. Vector of start ages of abridged age groups in input qx
 #' @param qx_abridged numeric. Vector of probabilities of dying for abridged age groups to be fit
 #' @param user_pattern numeric. Vector of qx to be used as model pattern when type=="user_defined"
-#' 
+#' @param lt_compute logical. Should output include all life table columns.  If FALSE, processing is faster and only nqx is output. 
+#' @inheritParams lt_abridged
+#' @return data.frame. Life table values for abridged age groups.
+#' @importFrom stats uniroot MortCast DemoTools
+#' @examples 
 
+
+lt_model_un_bestft<-function(type, 
+                             Sex, 
+                             age_start_abridged, 
+                             qx_abridged, 
+                             user_pattern = NA,
+                             lt_compute = TRUE,
+                             OAnew = 110,
+                             radix = 1e+05, 
+                             axmethod = "un", 
+                             a0rule = "ak", 
+                             region = "w", 
+                             IMR = NA, 
+                             mod = TRUE, 
+                             SRB = 1.05, 
+                             extrapLaw = "kannisto", 
+                             extrapFrom = OAnew-5, 
+                             extrapFit = (OAnew-30):(OAnew-5)) {
+  
 ## Do some checking/validating of input arguments
 
-  sex <- tolower(substr(sex,1,1))
-  sex_check <- sex %in% c("m","f")
+  Sex <- tolower(substr(Sex,1,1))
+  sex_check <- Sex %in% c("m","f")
   
   if (!sex_check) 
-    stop("The sex argument must be either 'm' or 'f'.")
+    stop("The Sex argument must be either 'm' or 'f'.")
   
   type_check <- type %in% c("user_defined", "UN_Latin_American", "UN_Far_Eastern",
                             "UN_Chilean", "UN_South_Asian", "UN_General")
@@ -124,7 +137,7 @@ lt_model_un_bestft<-function(type,
     EMP <- rep(EMP,2)
   }
   
-  if (sex == "m") {
+  if (Sex == "m") {
     
     EMP <- EMP[1:18]
     
@@ -135,7 +148,7 @@ lt_model_un_bestft<-function(type,
                  c(.09331,-.29269,-.47139,-.17403,.10715,.28842,.33620,.33692,.21354,
                    .15269,.06569,.00045,-.03731,-.10636,-.11214,-.22258,-.19631,-.38123))
   }
-  if (sex == "f") {
+  if (Sex == "f") {
     
     EMP <- EMP[19:36]
     
@@ -217,7 +230,20 @@ lt_model_un_bestft<-function(type,
     CF <- EMP + A1*VEC[,1]+A2*VEC[,2]+A3*VEC[,3]
     CF <- exp(2.0*CF)/(1.0+exp(2.0*CF)) # nqx
     if (lt_compute == TRUE) {
-    lt <- lt_abridged(Age = age, nqx = CF, Sex = sex, axmethod=axmethod, a0rule = a0rule, mod = mod, OAnew = OAnew)
+    lt <- DemoTools::lt_abridged(Age = age, 
+                      nqx = CF, 
+                      Sex = Sex, 
+                      OAnew = OAnew,
+                      radix = radix, 
+                      axmethod = axmethod, 
+                      a0rule = a0rule, 
+                      region = region, 
+                      IMR = IMR, 
+                      mod = mod, 
+                      SRB = SRB, 
+                      extrapLaw = extrapLaw, 
+                      extrapFrom = extrapFrom, 
+                      extrapFit = extrapFit)
     } else {
       lt <- data.frame(Age = age, nqx = CF)
       }

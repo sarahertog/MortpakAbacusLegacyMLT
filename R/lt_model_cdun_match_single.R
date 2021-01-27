@@ -1,11 +1,3 @@
-lt_model_cdun_match_single <- function(type, 
-                                sex, 
-                                indicator, 
-                                value, 
-                                axmethod = "un",
-                                a0rule = "cd",
-                                mod = FALSE,
-                                OAnew = 130)   {
 # --------------------------------------------------------------------------------------------------------------------------
 #      MATCH is derived from MORTPAK software package and customized for Abacus
 #               UNITED NATION SOFTWARE PACKAGE FOR MORTALITY MEASUREMENT     
@@ -51,21 +43,30 @@ lt_model_cdun_match_single <- function(type,
 #' @importFrom stats uniroot MortCast DemoTools
 #' @examples 
 #' 
+#' 
+#'  lt <- lt_model_cdun_match_single(type = "CD_West", Sex = "f", indicator = "5q0", value = 0.150)
+#'  lt <- lt_model_cdun_match_single(type = "CD_North", Sex = "m", indicator = "45q15", value = 0.450)
 
 
-  # sex = "f"
-  # type = "CD_West"
-  # indicator <- "5q0"
-  # value = .150
-  # 
-  # sex = "m"
-  # type = "CD_North"
-  # indicator <- "45q15"
-  # value = .450
-
+lt_model_cdun_match_single <- function(type,
+                                       indicator, 
+                                       value, 
+                                       radix = 1e+05, 
+                                       axmethod = "un", 
+                                       a0rule = "ak", 
+                                       Sex = "m", 
+                                       region = "w", 
+                                       IMR = NA, 
+                                       mod = TRUE, 
+                                       SRB = 1.05, 
+                                       OAnew = 130, 
+                                       extrapLaw = "kannisto", 
+                                       extrapFrom = OAnew-1, 
+                                       extrapFit = (OAnew-30):(OAnew-1))   {
+  
   # parse MLT lookup table according to type and sex
   data(MLTlookup_single)
-  MLTlookup <- MLTlookup_single[MLTlookup_single$type == type & MLTlookup_single$sex == sex,]
+  MLTlookup <- MLTlookup_single[MLTlookup_single$type == type & MLTlookup_single$sex == Sex,]
 
     if (indicator == "e0") {
       mlts       <- MLTlookup[MLTlookup$Age == 0, c("type","sex","index","ex")]
@@ -128,12 +129,18 @@ lt_model_cdun_match_single <- function(type,
     
     # compute the life table
     lt_out <- DemoTools::lt_single_mx(nMx = mx_hat[1:130], # need to truncate series to OA<130
-                                     Sex = sex, 
-                                     axmethod = axmethod, 
-                                     a0rule = a0rule,
-                                     OAG = FALSE,
-                                     OAnew = OAnew,
-                                     mod = mod)
+                                      Sex = Sex, 
+                                      a0rule = a0rule,
+                                      OAG = TRUE,
+                                      OAnew = OAnew,
+                                      radix = radix, 
+                                      region = region, 
+                                      IMR = IMR, 
+                                      mod = mod, 
+                                      SRB = SRB, 
+                                      extrapLaw = extrapLaw, 
+                                      extrapFrom = extrapFrom, 
+                                      extrapFit = extrapFit)
   
 
   return(lt_out)

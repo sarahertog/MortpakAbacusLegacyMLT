@@ -1,13 +1,3 @@
-lt_model_cdun_combin_single <- function(type, 
-                                 sex, 
-                                 q1 = NA, 
-                                 q5 = NA, 
-                                 indicator_adult, 
-                                 value_adult,
-                                 axmethod = "un",
-                                 a0rule = "cd",
-                                 mod = FALSE,
-                                 OAnew = 110)   {
 # --------------------------------------------------------------------------------------------------------------------------
 #      COMBIN is derived from MORTPAK software package and customized for Abacus
 #               UNITED NATION SOFTWARE PACKAGE FOR MORTALITY MEASUREMENT   
@@ -23,10 +13,10 @@ lt_model_cdun_combin_single <- function(type,
 # Sara Hertog modified to maintain method, but simplify syntax for ccmppWPP 2021 revision
 # --------------------------------------------------------------------------------------------------------------------------
 
-#' Estimate UN or Coale Demeney family model life tables, matching multiple inptu parameters
+#' Estimate UN or Coale Demeney family model life tables, matching multiple input parameters
 #' 
 #' @details xxx
-#' @param sex Choose the sex of the population. 
+#' @param Sex Choose the sex of the population. 
 #' #' The following options are available: \itemize{
 #'   \item{\code{"b"}} -- Both sex; 
 #'   \item{\code{"f"}} -- Females;
@@ -57,16 +47,33 @@ lt_model_cdun_combin_single <- function(type,
 #' @importFrom stats uniroot MortCast DemoTools
 #' @examples 
 #' 
+#'
+#'lt <- lt_model_cdun_combin_single(type = "CD_West", Sex = "f",
+#'                                  q1 = .04651, q5 = .06027,
+#'                                  indicator_adult = "45q15", value_adult = .241,
+#'                                  OAnew = 110)
+#'
 
 
-  # sex = "f"
-  # type = "CD_West"
-  # q1 = .04651
-  # q5 = .06027
-  # indicator_adult <- "45q15"
-  # value_adult = .241
 
-
+lt_model_cdun_combin_single <- function(type, 
+                                        Sex, 
+                                        q1 = NA, 
+                                        q5 = NA, 
+                                        indicator_adult, 
+                                        value_adult,
+                                        OAnew = 110,
+                                        radix = 1e+05, 
+                                        axmethod = "un", 
+                                        a0rule = "ak", 
+                                        region = "w", 
+                                        IMR = NA, 
+                                        mod = TRUE, 
+                                        SRB = 1.05, 
+                                        extrapLaw = "kannisto", 
+                                        extrapFrom = OAnew-5, 
+                                        extrapFit = seq(OAnew-30, OAnew-5, 5))   {
+  
 #############################
 ##############################
 ###############################
@@ -76,7 +83,7 @@ lt_model_cdun_combin_single <- function(type,
 
   # first match on adult mortality indicator via lt_model_cdun_match function;
   lt_temp_adult_single <- lt_model_cdun_match_single(type = type,
-                                                     sex  = sex,
+                                                     Sex  = Sex,
                                                      indicator = indicator_adult,
                                                      value = value_adult,
                                                      OAnew = 130)
@@ -103,10 +110,11 @@ lt_model_cdun_combin_single <- function(type,
   if (!is.na(q1) & is.na(q5)) {
     # bestft on q1 and 5q20 to get 4q1, 5q5, and 5q10
     lt_temp_child <- lt_model_un_bestft(type = type_combin,
-                                        sex  = sex,
+                                        Sex  = Sex,
                                         age_start_abridged = c(0,20),
                                         qx_abridged = c(q1,q5_20),
-                                        user_pattern = users_model_pattern)
+                                        user_pattern = users_model_pattern,
+                                        lt_compute = FALSE)
     lt_temp_child <- lt_temp_child[lt_temp_child$bestft_components == 2,]
     
     # splice input q1, best_ft q for ages 1-4, 5-9, 10-14, and adult match for older ages
@@ -118,7 +126,7 @@ lt_model_cdun_combin_single <- function(type,
   if (is.na(q1) & !is.na(q5)) {
     # match on q5 to get q1
     lt_temp_child <- lt_model_cdun_match_single(type = type,
-                                                sex  = sex,
+                                                Sex  = Sex,
                                                 indicator = "5q0",
                                                 value = q5)
     q1 <- lt_temp_child$nqx[1]
@@ -132,7 +140,7 @@ lt_model_cdun_combin_single <- function(type,
     q1_4 <- 1-(l5/l1)
     # bestft first with 1q0 and 5q20
     lt_out1 <- lt_model_un_bestft(type = type_combin,
-                                  sex = sex,
+                                  Sex = Sex,
                                   age_start_abridged = c(0,20),
                                   qx_abridged = c(q1,q5_20),
                                   user_pattern = users_model_pattern,
@@ -140,7 +148,7 @@ lt_model_cdun_combin_single <- function(type,
     qx_out1 <- lt_out1[lt_out1$bestft_components == 2, "nqx"]
     # bestft second with 4q1 and 5q20
     lt_out2 <- lt_model_un_bestft(type = type_combin,
-                                  sex = sex,
+                                  Sex = Sex,
                                   age_start_abridged = c(1,20),
                                   qx_abridged = c(q1_4,q5_20),
                                   user_pattern = users_model_pattern,
@@ -150,30 +158,33 @@ lt_model_cdun_combin_single <- function(type,
     qx_out <- c(q1, q1_4, c((qx_out1+qx_out2)/2)[3:4], lt_temp_adult_abr$nqx[5:nrow(lt_temp_adult_abr)])
   }
   
-lt_out_abr <- lt_abridged(nqx = qx_out,
+lt_out_abr <- DemoTools::lt_abridged(nqx = qx_out,
                           Age = lt_temp_adult_abr$Age, 
-                          Sex = sex, 
+                          Sex = Sex, 
                           axmethod = axmethod, 
                           a0rule = a0rule, 
-                          OAnew = OAnew,
+                          OAnew = 130,
                           mod = mod,
                           extrapFrom = max(lt_temp_adult_abr$Age) - 5)
 
-lt_out_sng <- lt_abridged2single(Age = lt_out_abr$Age,
-                                 ndx = lt_out_abr$ndx,
-                                 nLx = lt_out_abr$nLx,
-                                 radix = 1e5,
-                                 a0rule = "ak", 
-                                 Sex = "m",
-                                 region = "w",
-                                 mod = TRUE,
+lt_out_sng <- DemoTools::lt_abridged2single(Age = lt_out_abr$Age,
+                                 nMx = lt_out_abr$nMx,
+                                 radix = radix,
+                                 a0rule = a0rule, 
+                                 Sex = Sex,
+                                 region = region,
+                                 IMR = IMR, 
+                                 mod = mod, 
+                                 SRB = SRB, 
                                  OAG = TRUE,
-                                 OAnew = max(lt_out_abr$Age),
-                                 extrapLaw = "kannisto",
-                                 extrapFrom = max(lt_out_abr$Age)-1,
-                                 extrapFit = lt_out_abr$Age[lt_out_abr$Age >= 60 & lt_out_abr$Age < max(lt_out_abr$Age)])
+                                 OAnew = OAnew,
+                                 extrapLaw = extrapLaw,
+                                 extrapFit = extrapFit,
+                                 extrapFrom = extrapFrom)
 
-  
+ 
+return(lt_out_sng)
+
 }
   
  
