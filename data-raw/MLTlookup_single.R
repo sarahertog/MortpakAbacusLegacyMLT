@@ -55,7 +55,7 @@ summary(diff1)
 
 # > summary(diff1)
 # Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-# -0.139297 -0.029395  0.007286  0.005819  0.032831  0.177433 
+# -0.289592 -0.083168 -0.038359 -0.049091 -0.005089  0.218819 
 ## not exact replication of original e0 value but close enough
 
 MLTlookup_single <- MLTlookup_sgl[,c("type","sex","index","Age","AgeInt","nMx","nAx","nqx","lx",
