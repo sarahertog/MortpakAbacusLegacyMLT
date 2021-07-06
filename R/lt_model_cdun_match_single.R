@@ -5,7 +5,7 @@
 # This version is designed to use the same method as used in SLON and uses a look up table provided by the calling program
 # Source of lookup table is MortCast MLTlookup
 # Sara Hertog modified to maintain method, but simplify syntax for ccmppWPP 2021 revision
-# and match to model life tables graduated to single year of age
+# and match to MortCast model life tables graduated to single year of age
 # --------------------------------------------------------------------------------------------------------------------------
 
 #' Estimate UN or Coale Demeney family model life tables, matching on one input parameter
@@ -65,10 +65,11 @@ lt_model_cdun_match_single <- function(type,
                                        extrapFit = (OAnew-30):(OAnew-1))   {
   
   # parse MLT lookup table according to type and sex
-  data(MLTlookup_single)
-  MLTlookup <- MLTlookup_single[MLTlookup_single$type == type & MLTlookup_single$sex == Sex,]
-
-    if (indicator == "e0") {
+  sexcode <- ifelse(Sex == "m", 1, ifelse(Sex == "f", 2, NA))
+  MLTlookup <- MortCast::MLT1Ylookup
+  MLTlookup <- MLTlookup[MLTlookup$type == type & MLTlookup$sex == sexcode,]
+  
+   if (indicator == "e0") {
       mlts       <- MLTlookup[MLTlookup$Age == 0, c("type","sex","index","ex")]
       mlts$level <- mlts$ex
       mlts       <- merge(MLTlookup, mlts[,c("type","sex","index","level")], by = c("type","sex","index"))
